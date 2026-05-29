@@ -21,7 +21,7 @@ CONFIG = {
     # Lista de tus activos a monitorear
     "assets": ["RA.MX", "WALMEX.MX", "ALSEA.MX"], 
     "dend": datetime.date.today().strftime('%Y-%m-%d'),
-    "modo_pruebas": False, # Cambiar a True si quieres forzar alertas simuladas en GitHub
+    "modo_pruebas": True, # Cambiar a True si quieres forzar alertas simuladas en GitHub
     "ema_f": 20,
     "ema_s": 50,
     "rsi_pr": 14,
