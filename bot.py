@@ -17,9 +17,22 @@ plt.switch_backend('Agg')
 # CONFIGURACIÓN DE PRODUCCIÓN
 # ==============================================================================
 CONFIG = {
-    "assets": ["RA.MX", "WALMEX.MX", "ALSEA.MX"], 
+    "assets": [
+    "GMEXICOB.MX", "AMXB.MX", "WALMEX.MX", "GFNORTEO.MX", "FEMSAUBD.MX", 
+    "AC.MX", "CEMEXCPO.MX", "GFINBURO.MX", "BIMBOA.MX", "GAPB.MX", 
+    "ASURB.MX", "FIBRAPL14.MX", "VISTAA.MX", "FUNO11.MX", "PINFRA.MX", 
+    "GRUMAB.MX", "CHDRAUIB.MX", "KOFUBL.MX", "SIGMAFA.MX", "OMAB.MX", 
+    "GENTERA.MX", "CMOCTEZ.MX", "GCC.MX", "ICHB.MX", "Q.MX", 
+    "BBAJIOO.MX", "KIMBERA.MX", "VESTA.MX", "CUERVO.MX", "SITES1A-1.MX", 
+    "FRAGUAB.MX", "RA.MX", "FMTY14.MX", "DANHOS13.MX", "ORBIA.MX", 
+    "ALSEA.MX", "NEXT25.MX", "AERO.MX", "MEGACPO.MX", "LASITE.MX", 
+    "TLEVISACPO.MX", "ALPEKA.MX", "FCFE18.MX", "LACOMERUBC.MX", "FNOVA17.MX", 
+    "LABB.MX", "VOLARA.MX", "ACTINVRB.MX", "NEMAKA.MX", "AGUILASCPO.MX", 
+    "VINTE.MX", "FMX23.MX", "AXTELCPO.MX", "AGUA.MX", "FIHO12.MX", 
+    "TRAXIONA.MX", "ARA.MX", "FINN13.MX", "AUTLANB.MX", "HCITY.MX"
+], 
     "dend": date.today().strftime('%Y-%m-%d'),  
-    "modo_pruebas": True, # Cambiar a False cuando desees operar en vivo con mercado real
+    "modo_pruebas": False, # Cambiar a False cuando desees operar en vivo con mercado real
     "ema_f": 20,
     "ema_s": 50,
     "rsi_pr": 14,
