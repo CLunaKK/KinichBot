@@ -1,0 +1,31 @@
+name: Escáner Automático BMV
+
+on:
+  schedule:
+    # 3:01 PM CDMX (UTC-6) es igual a las 21:01 UTC. Corre de Lunes a Viernes (1-5).
+    - cron: '1 21 * * 1-5'
+  workflow_dispatch: # Permite botón de Play manual
+
+jobs:
+  run-scanner:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clonar Repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Instalar Dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Ejecutar Motor de Alertas
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: python bot.py
