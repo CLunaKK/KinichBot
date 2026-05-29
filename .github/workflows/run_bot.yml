@@ -2,13 +2,15 @@ name: Escáner Automático BMV
 
 on:
   schedule:
-    # 3:01 PM CDMX (UTC-6) es igual a las 21:01 UTC. Corre de Lunes a Viernes (1-5).
     - cron: '1 21 * * 1-5'
-  workflow_dispatch: # Permite botón de Play manual
+  workflow_dispatch: 
 
 jobs:
   run-scanner:
     runs-on: ubuntu-latest
+    env:
+      # FIX: Elimina por completo la advertencia de depreciación de Node 20
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
     - name: Clonar Repositorio
       uses: actions/checkout@v4
