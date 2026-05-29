@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta, date  # FIX: Importación limpia y explícita
+from datetime import datetime, timedelta, date
 import numpy as np
 import pandas as pd
 import yfinance as yf         
@@ -18,8 +18,8 @@ plt.switch_backend('Agg')
 # ==============================================================================
 CONFIG = {
     "assets": ["RA.MX", "WALMEX.MX", "ALSEA.MX"], 
-    "dend": date.today().strftime('%Y-%m-%d'),  # FIX: Corregido para evitar el AttributeError
-    "modo_pruebas": True, # Déjalo en True para verificar que lleguen todas las alertas de prueba
+    "dend": date.today().strftime('%Y-%m-%d'),  
+    "modo_pruebas": True, # Cambiar a False cuando desees operar en vivo con mercado real
     "ema_f": 20,
     "ema_s": 50,
     "rsi_pr": 14,
@@ -42,6 +42,7 @@ def generar_y_guardar_grafico(df, cfg, ticker, last_index, precio_entrada=None, 
     plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 7), gridspec_kw={'height_ratios': [3, 1]})
     
+    # Panel Superior: Gráfico de Precios Claro
     ax1.plot(df_plot['Date'], df_plot['askclose'], label='Precio Cierre', color='#1f77b4', linewidth=2.5, zorder=3)
     ax1.plot(df_plot['Date'], df_plot['ema20'], label=f'EMA {cfg["ema_f"]}', color='#ff7f0e', linestyle='--')
     ax1.plot(df_plot['Date'], df_plot['ema50'], label=f'EMA {cfg["ema_s"]}', color='#2ca02c', linestyle='--')
@@ -53,10 +54,11 @@ def generar_y_guardar_grafico(df, cfg, ticker, last_index, precio_entrada=None, 
         ax1.axhspan(precio_entrada, tp, color='#2ca02c', alpha=0.08, label='Zona Objetivo')
         ax1.axhspan(sl, precio_entrada, color='#d62728', alpha=0.08, label='Zona Riesgo')
 
-    ax1.set_title(f"Auditoría Visual - {ticker}", fontsize=14, fontweight='bold')
+    ax1.set_title(f"Auditoría Visual Estándar - {ticker}", fontsize=14, fontweight='bold')
     ax1.set_ylabel('Precio')
     ax1.legend(loc='upper left', frameon=True, facecolor='white', framealpha=0.95)
     
+    # Panel Inferior: Momentum RSI Claro
     ax2.plot(df_plot['Date'], df_plot['rsi'], color='#9467bd', linewidth=1.8, label='RSI (14)')
     ax2.axhline(cfg['rsi_buy'], color='#d62728', linestyle=':', alpha=0.8)
     ax2.axhline(cfg['rsi_sell'], color='#1f77b4', linestyle=':', alpha=0.8)
@@ -80,27 +82,61 @@ def despachar_telegram_con_foto(token, chat_id, mensaje, ruta_foto):
         with open(ruta_foto, 'rb') as foto:
             payload = {'chat_id': chat_id, 'caption': mensaje, 'parse_mode': 'Markdown'}
             res = requests.post(url, data=payload, files={'photo': foto})
-            print(f"📸 Telegram despachado para activo. Status: {res.status_code}")
+            print(f"📸 Telegram despachado para {ruta_foto}. Status: {res.status_code}")
     except Exception as e:
         print(f"❌ Error enviando a Telegram: {e}")
 
 def ejecutar_escanner(cfg):
+    # ==========================================================================
+    # MODIFICACIÓN: SIMULACIÓN FIEL IDÉNTICA A COLAB (MULTI-ACTIVO)
+    # ==========================================================================
     if cfg['modo_pruebas']:
-        print(f"🧪 [MODO PRUEBA] Ejecutando simulación para: {cfg['assets']}")
+        print(f"🧪 [MODO PRUEBA MULTI-ACTIVO] Generando simulaciones fieles para: {cfg['assets']}\n")
+        
         for idx, ticker in enumerate(cfg['assets']):
-            precio_base = 60.0 + (idx * 30.0)
+            # Escalamos el precio base para simular diferentes zonas de valor por ticker
+            precio_base = 50.0 + (idx * 40.0)
             fechas_mock = [datetime.now() - timedelta(days=x) for x in range(50, -1, -1)]
-            df = pd.DataFrame({'Date': fechas_mock, 'askclose': np.linspace(precio_base, precio_base*1.1, 51)})
-            df['askhigh'], df['asklow'], df['Volume'] = df['askclose']+1, df['askclose']-1, 200000
-            df['ema20'], df['ema50'], df['rsi'], df['atr'] = df['askclose']-1, df['askclose']-3, np.linspace(40, 56, 51), 2.0
-            last_index = df.index[-2]
-            p_sim = round(df['askclose'].iloc[last_index], 2)
+            precios_mock = np.linspace(precio_base, precio_base * 1.15, 51) + np.random.normal(0, 1, 51)
             
-            ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, p_sim, p_sim-3, p_sim+5)
-            msg = f"🧪 **MODO PRUEBA: {ticker}**\n🟢 Entrada simulada por automatización en GitHub Actions."
-            despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], msg, ruta)
+            df = pd.DataFrame({'Date': fechas_mock, 'askclose': precios_mock})
+            df['askhigh'] = df['askclose'] + 1.2
+            df['asklow'] = df['askclose'] - 1.2
+            df['Volume'] = np.random.randint(150000, 450000, 51)
+            
+            # Estructura completa de indicadores requerida por el motor gráfico claro
+            df['ema20'] = df['askclose'] - 1.5
+            df['ema50'] = df['askclose'] - 4.5
+            df['rsi'] = np.linspace(42, 57, 51) 
+            df['atr'] = round(precio_base * 0.03, 2)
+            
+            last_index = df.index[-2]
+            precio_simulado = round(df['askclose'].iloc[last_index], 2)
+            atr_mock = df['atr'].iloc[last_index]
+            
+            # Cálculo dinámico basado exactamente en los multiplicadores de la estrategia
+            sl_simulado = round(precio_simulado - (cfg['sl_mult'] * atr_mock), 2)
+            tp_simulado = round(precio_simulado + (cfg['tp_mult'] * atr_mock), 2)
+            
+            # Generar el gráfico en la ruta limpia y clara
+            ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, precio_simulado, sl_simulado, tp_simulado)
+            
+            # Formateo fiel del mensaje de alerta estructurada
+            msg_test = (f"🧪 **ALERTA SIMULADA (MODO DE PRUEBA - GITHUB ACTIONS)**\n\n"
+                        f"🟢 **ENTRADA LONG GATILLADA ({ticker})**\n"
+                        f"📅 Fecha: {cfg['dend']} (Hoy)\n"
+                        f"💰 Precio Entrada: {precio_simulado}\n"
+                        f"🛑 Stop Loss (1.5x ATR): {sl_simulado}\n"
+                        f"🎯 Take Profit (2.5x ATR): {tp_simulado}\n\n"
+                        f"_*Notificación de control enviada con plantilla real de mercado e histórico claro._")
+            
+            despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], msg_test, ruta)
+            time.sleep(0.5)
         return
 
+    # ==========================================================================
+    # EJECUCIÓN REAL EN MERCADO
+    # ==========================================================================
     for ticker in cfg['assets']:
         try:
             dias_atras = int((cfg['ema_s'] + cfg['vol_pr'] + 10) * 7 / 5)
@@ -133,8 +169,10 @@ def ejecutar_escanner(cfg):
 
             precio_cierre = round(df['askclose'].iloc[last_index], 4)
             fecha_str = pd.to_datetime(df['Date'].iloc[last_index]).strftime('%Y/%m/%d')
+            df['Alerta'] = ' Neutral'
 
             if df['signal_long'].iloc[last_index]:
+                df.loc[last_index, 'Alerta'] = '🟢 COMPRA'
                 sl = round(precio_cierre - (cfg['sl_mult'] * df['atr'].iloc[last_index]), 4)
                 tp = round(precio_cierre + (cfg['tp_mult'] * df['atr'].iloc[last_index]), 4)
                 ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, precio_cierre, sl, tp)
@@ -146,16 +184,20 @@ def ejecutar_escanner(cfg):
                 sl, tp = p_entry - (cfg['sl_mult'] * atr_e), p_entry + (cfg['tp_mult'] * atr_e)
 
                 if precio_cierre <= sl:
+                    df.loc[last_index, 'Alerta'] = '🔴 HIT SL'
                     ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, p_entry, sl, tp)
                     despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], f"🔴 **HIT SL ({ticker})**\n📉 Salida: {precio_cierre}", ruta)
                 elif precio_cierre >= tp:
+                    df.loc[last_index, 'Alerta'] = '🟢 HIT TP'
                     ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, p_entry, sl, tp)
                     despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], f"🟢 **HIT TP ({ticker})**\n📈 Salida: {precio_cierre}", ruta)
                 elif df['exit_indicators'].iloc[last_index]:
+                    df.loc[last_index, 'Alerta'] = '⚠️ EXIT TEC'
                     ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, p_entry, sl, tp)
                     despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], f"⚠️ **EXIT TÉCNICO ({ticker})**\n📉 Salida: {precio_cierre}", ruta)
             
-            time.sleep(1)
+            print(f"📊 Estado {ticker} -> Precio: {precio_cierre:.2f} | Alerta: {df['Alerta'].iloc[last_index]}")
+            time.sleep(0.5)
         except Exception as e:
             print(f"🚨 Error en {ticker}: {e}")
             continue
