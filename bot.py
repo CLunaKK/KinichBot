@@ -1,6 +1,5 @@
 import os
-import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date  # FIX: Importación limpia y explícita
 import numpy as np
 import pandas as pd
 import yfinance as yf         
@@ -11,17 +10,16 @@ import requests
 import matplotlib.pyplot as plt
 import time
 
-# FIX DX: Forzar a matplotlib a correr en modo headless (servidor sin pantalla)
+# Forzar a matplotlib a correr en modo headless (servidor sin pantalla)
 plt.switch_backend('Agg')
 
 # ==============================================================================
 # CONFIGURACIÓN DE PRODUCCIÓN
 # ==============================================================================
 CONFIG = {
-    # Lista de tus activos a monitorear
     "assets": ["RA.MX", "WALMEX.MX", "ALSEA.MX"], 
-    "dend": datetime.date.today().strftime('%Y-%m-%d'),
-    "modo_pruebas": True, # Cambiar a True si quieres forzar alertas simuladas en GitHub
+    "dend": date.today().strftime('%Y-%m-%d'),  # FIX: Corregido para evitar el AttributeError
+    "modo_pruebas": True, # Déjalo en True para verificar que lleguen todas las alertas de prueba
     "ema_f": 20,
     "ema_s": 50,
     "rsi_pr": 14,
@@ -82,7 +80,7 @@ def despachar_telegram_con_foto(token, chat_id, mensaje, ruta_foto):
         with open(ruta_foto, 'rb') as foto:
             payload = {'chat_id': chat_id, 'caption': mensaje, 'parse_mode': 'Markdown'}
             res = requests.post(url, data=payload, files={'photo': foto})
-            print(f" Telegram despachado. Status: {res.status_code}")
+            print(f"📸 Telegram despachado para activo. Status: {res.status_code}")
     except Exception as e:
         print(f"❌ Error enviando a Telegram: {e}")
 
@@ -99,7 +97,7 @@ def ejecutar_escanner(cfg):
             p_sim = round(df['askclose'].iloc[last_index], 2)
             
             ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, p_sim, p_sim-3, p_sim+5)
-            msg = f"🧪 **MODO PRUEBA: {ticker}**\n🟢 Entrada simulada por automatización total."
+            msg = f"🧪 **MODO PRUEBA: {ticker}**\n🟢 Entrada simulada por automatización en GitHub Actions."
             despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], msg, ruta)
         return
 
@@ -126,7 +124,7 @@ def ejecutar_escanner(cfg):
             df['signal_long'] = df['cond_trend'] & df['cond_rsi_buy'] & df['cond_vol']
             df['exit_indicators'] = (df['rsi'] < cfg['rsi_sell']) | (df['askclose'] < df['ema20'])
 
-            last_index = df.index[-1] # En GitHub Actions la última vela ya está cerrada al fin del día
+            last_index = df.index[-1]
             posicion_activa, entry_idx = False, None
 
             for i in range(max(0, last_index - 30), last_index + 1):
@@ -155,7 +153,7 @@ def ejecutar_escanner(cfg):
                     despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], f"🟢 **HIT TP ({ticker})**\n📈 Salida: {precio_cierre}", ruta)
                 elif df['exit_indicators'].iloc[last_index]:
                     ruta = generar_y_guardar_grafico(df, cfg, ticker, last_index, p_entry, sl, tp)
-                    despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], f"⚠️ **EXIT TECNICO ({ticker})**\n📉 Salida: {precio_cierre}", ruta)
+                    despachar_telegram_con_foto(cfg['telegram_token'], cfg['telegram_chat_id'], f"⚠️ **EXIT TÉCNICO ({ticker})**\n📉 Salida: {precio_cierre}", ruta)
             
             time.sleep(1)
         except Exception as e:
